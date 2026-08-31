@@ -1,127 +1,130 @@
 from modelos.producto import Producto
-from modelos.bebida import Bebida
-from modelos.cliente import Cliente
-from servicios.archivo_servicio import ArchivoServicio
+from modelos.usuario import Usuario
 from servicios.restaurante import Restaurante
 
 def mostrar_menu():
-    print("\n=== CAFETERIA APP - Semana 10 ===")
+    print("\n--- RESTAURANTE APP (SEMANA 11) ---")
     print("1. Agregar producto")
-    print("2. Agregar bebida")
-    print("3. Consultar producto")
-    print("4. Modificar producto")
-    print("5. Borrar producto")
-    print("6. Ver todos los productos")
-    print("7. Agregar cliente")
-    print("8. Ver clientes")
+    print("2. Consultar producto")
+    print("3. Modificar producto")
+    print("4. Borrar producto")
+    print("5. Ver todos los productos")
+    print("6. Agregar usuario")
+    print("7. Ver usuarios")
+    print("8. Realizar venta")
+    print("9. Consultar ventas por usuario")
     print("0. Salir")
 
 def pedir(mensaje: str) -> str:
     return input(mensaje).strip()
 
-def guardar(servicio: ArchivoServicio, resto: Restaurante):
-    if not servicio.guardar_productos(resto.listar_productos()):
-        print("No se pudo guardar.")
-
 def main():
-    servicio = ArchivoServicio("datos/productos.json")
-    productos = servicio.cargar_productos()
-    resto = Restaurante(productos)
-    print(f"Se cargaron {resto.contar_productos()} productos desde datos/productos.json")
+    restaurante = Restaurante()
 
     while True:
         mostrar_menu()
-        op = pedir("Elige opción: ")
-        if op == "1":
-            print("\n-- Agregar producto --")
+        opcion = pedir("Elige opción: ")
+
+        if opcion == "1":
+            codigo = pedir("Código del producto: ")
+            nombre = pedir("Nombre del producto: ")
             try:
-                codigo = pedir("Código: ")
-                nombre = pedir("Nombre: ")
-                categoria = pedir("Categoría: ")
                 precio = float(pedir("Precio: "))
-                prod = Producto(codigo, nombre, categoria, precio)
-                if resto.registrar_producto(prod):
-                    print(f"Producto '{nombre}' agregado.")
-                    guardar(servicio, resto)
+                stock = int(pedir("Stock inicial: "))
+                producto = Producto(codigo, nombre, precio, stock)
+                if restaurante.agregar_producto(producto):
+                    print("¡Producto registrado exitosamente!")
                 else:
-                    print(f"Ya existe código {codigo}.")
+                    print("Error: Ya existe un producto con ese código.")
             except ValueError as e:
-                print(e)
-        elif op == "2":
-            print("\n-- Agregar bebida --")
-            try:
-                codigo = pedir("Código: ")
-                nombre = pedir("Nombre: ")
-                categoria = pedir("Categoría: ")
-                precio = float(pedir("Precio: "))
-                presentacion = pedir("Presentación (ej: 500ml): ")
-                beb = Bebida(codigo, nombre, categoria, precio, presentacion)
-                if resto.registrar_producto(beb):
-                    print(f"Bebida '{nombre}' agregada.")
-                    guardar(servicio, resto)
-                else:
-                    print(f"Ya existe código {codigo}.")
-            except ValueError as e:
-                print(e)
-        elif op == "3":
+                print(f"Error de validación: {e}")
+
+        elif opcion == "2":
             codigo = pedir("Código a buscar: ")
-            p = resto.buscar_producto(codigo)
-            print(p.mostrar_informacion() if p else "No encontrado.")
-        elif op == "4":
-            print("\n-- Modificar producto --")
-            codigo = pedir("Código: ")
-            p = resto.buscar_producto(codigo)
-            if not p:
-                print("No existe.")
-                continue
-            try:
-                nombre = pedir(f"Nuevo nombre [{p.nombre}]: ") or p.nombre
-                categoria = pedir(f"Nueva categoría [{p.categoria}]: ") or p.categoria
-                precio_txt = pedir(f"Nuevo precio [{p.precio}]: ")
-                precio = float(precio_txt) if precio_txt else p.precio
-                pres = None
-                if isinstance(p, Bebida):
-                    pres = pedir(f"Nueva presentación [{p.presentacion}]: ") or p.presentacion
-                if resto.actualizar_producto(codigo, nombre, categoria, precio, pres):
-                    print("Actualizado.")
-                    guardar(servicio, resto)
-            except ValueError as e:
-                print(e)
-        elif op == "5":
-            codigo = pedir("Código a borrar: ")
-            if resto.eliminar_producto(codigo):
-                print("Eliminado.")
-                guardar(servicio, resto)
+            p = restaurante.buscar_producto(codigo)
+            if p:
+                print(f"Encontrado: [{p.codigo}] {p.nombre} - ${p.precio:.2f} | Stock: {p.stock}")
             else:
-                print("No existe.")
-        elif op == "6":
-            lista = resto.listar_productos()
-            if not lista:
-                print("Sin productos.")
+                print("Producto no encontrado.")
+
+        elif opcion == "3":
+            codigo = pedir("Código del producto a modificar: ")
+            if restaurante.buscar_producto(codigo):
+                try:
+                    nombre = pedir("Nuevo nombre: ")
+                    precio = float(pedir("Nuevo precio: "))
+                    stock = int(pedir("Nuevo stock: "))
+                    if restaurante.modificar_producto(codigo, nombre, precio, stock):
+                        print("Producto modificado correctamente.")
+                except ValueError as e:
+                    print(f"Error en los datos: {e}")
             else:
-                for prod in lista:
-                    print(prod.mostrar_informacion())
-        elif op == "7":
-            print("\n-- Agregar cliente --")
+                print("El producto no existe.")
+
+        elif opcion == "4":
+            codigo = pedir("Código del producto a eliminar: ")
+            if restaurante.eliminar_producto(codigo):
+                print("Producto eliminado con éxito.")
+            else:
+                print("Producto no encontrado.")
+
+        elif opcion == "5":
+            productos = restaurante.listar_productos()
+            if productos:
+                print("\nLISTA DE PRODUCTOS:")
+                for p in productos:
+                    print(f"- [{p.codigo}] {p.nombre} - ${p.precio:.2f} | Stock: {p.stock}")
+            else:
+                print("No hay productos registrados.")
+
+        elif opcion == "6":
+            identificacion = pedir("Identificación del usuario: ")
+            nombre = pedir("Nombre completo: ")
+            email = pedir("Email: ")
+            usuario = Usuario(identificacion, nombre, email)
+            if restaurante.agregar_usuario(usuario):
+                print("Usuario registrado exitosamente.")
+            else:
+                print("Error: El usuario ya está registrado.")
+
+        elif opcion == "7":
+            usuarios = restaurante.listar_usuarios()
+            if usuarios:
+                print("\nLISTA DE USUARIOS:")
+                for u in usuarios:
+                    print(f"- [{u.identificacion}] {u.nombre} ({u.email})")
+            else:
+                print("No hay usuarios registrados.")
+
+        elif opcion == "8":
+            id_usuario = pedir("ID del Usuario comprador: ")
+            cod_producto = pedir("Código del Producto a comprar: ")
             try:
-                cid = pedir("ID: ")
-                nom = pedir("Nombre: ")
-                tel = pedir("Teléfono (opcional): ")
-                cli = Cliente(cid, nom, tel)
-                if resto.registrar_cliente(cli):
-                    print("Cliente agregado.")
+                cant = int(pedir("Cantidad: "))
+                if restaurante.vender_producto(cod_producto, id_usuario, cant):
+                    print("¡Venta realizada y registrada con éxito!")
                 else:
-                    print("ID duplicado.")
-            except ValueError as e:
-                print(e)
-        elif op == "8":
-            clientes = resto.listar_clientes()
-            print("\n".join(clientes) if clientes else "Sin clientes.")
-        elif op == "0":
-            print("Hasta luego!")
+                    print("Error: Usuario/Producto inexistente o stock insuficiente.")
+            except ValueError:
+                print("La cantidad debe ser un número entero válido.")
+
+        elif opcion == "9":
+            id_usuario = pedir("Identificación del usuario: ")
+            ventas = restaurante.consultar_ventas_usuario(id_usuario)
+            if ventas:
+                print(f"\nVENTAS REGISTRADAS PARA EL USUARIO {id_usuario}:")
+                for v in ventas:
+                    prod = restaurante.buscar_producto(v.producto_codigo)
+                    nombre_prod = prod.nombre if prod else v.producto_codigo
+                    print(f"- Producto: {nombre_prod} (Cód: {v.producto_codigo}) | Cantidad: {v.cantidad}")
+            else:
+                print("No se encontraron ventas para este usuario.")
+
+        elif opcion == "0":
+            print("¡Hasta luego!")
             break
         else:
-            print("Opción no válida.")
+            print("Opción inválida, intenta de nuevo.")
 
 if __name__ == "__main__":
     main()

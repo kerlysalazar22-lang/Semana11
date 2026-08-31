@@ -1,55 +1,98 @@
 import json
-from pathlib import Path
+import os
 from modelos.producto import Producto
-from modelos.bebida import Bebida
+from modelos.usuario import Usuario
+from modelos.venta import Venta
 
 class ArchivoServicio:
-    """Persistencia de productos en JSON."""
-    def __init__(self, ruta: str = "datos/productos.json") -> None:
-        self.ruta = Path(ruta)
+    RUTA_DATOS = "datos"
 
-    def cargar_productos(self) -> list[Producto]:
+    @classmethod
+    def _obtener_ruta(cls, nombre_archivo: str) -> str:
+        if not os.path.exists(cls.RUTA_DATOS):
+            os.makedirs(cls.RUTA_DATOS)
+        return os.path.join(cls.RUTA_DATOS, nombre_archivo)
+
+    @classmethod
+    def guardar_productos(cls, productos: list[Producto]) -> None:
+        ruta = cls._obtener_ruta("productos.json")
         try:
-            with open(self.ruta, "r", encoding="utf-8") as f:
-                contenido = json.load(f)
+            with open(ruta, "w", encoding="utf-8") as f:
+                json.dump([p.a_diccionario() for p in productos], f, indent=4, ensure_ascii=False)
+        except PermissionError:
+            print("Error: No se tienen permisos para escribir en productos.json.")
+
+    @classmethod
+    def cargar_productos(cls) -> list[Producto]:
+        ruta = cls._obtener_ruta("productos.json")
+        productos = []
+        try:
+            with open(ruta, "r", encoding="utf-8") as f:
+                datos = json.load(f)
+                for item in datos:
+                    productos.append(Producto.desde_diccionario(item))
         except FileNotFoundError:
-            return []
+            pass
         except json.JSONDecodeError:
-            print("Advertencia: productos.json dañado, se inicia vacío.")
-            return []
+            print("Error: Formato JSON inválido en productos.json.")
+        except KeyError as e:
+            print(f"Error: Clave faltante {e} al cargar productos.")
         except PermissionError:
-            print("Sin permisos para leer productos.json.")
-            return []
+            print("Error: Sin permisos para leer productos.json.")
+        return productos
 
-        if not isinstance(contenido, list):
-            print("Formato incorrecto: se esperaba una lista.")
-            return []
-
-        lista: list[Producto] = []
-        for reg in contenido:
-            if not isinstance(reg, dict):
-                continue
-            try:
-                if reg.get("tipo") == "Bebida":
-                    # compatibilidad con 'tamano' o 'presentacion'
-                    pres = reg.get("presentacion", reg.get("tamano", ""))
-                    obj = Bebida(reg["codigo"], reg["nombre"], reg["categoria"], reg["precio"], pres)
-                else:
-                    obj = Producto(reg["codigo"], reg["nombre"], reg["categoria"], reg["precio"])
-                lista.append(obj)
-            except KeyError:
-                print(f"Registro incompleto omitido: {reg.get('codigo','?')}")
-            except ValueError as e:
-                print(f"Registro inválido omitido: {e}")
-        return lista
-
-    def guardar_productos(self, productos: list[Producto]) -> bool:
-        datos = [p.convertir_a_diccionario() for p in productos]
+    @classmethod
+    def guardar_usuarios(cls, usuarios: list[Usuario]) -> None:
+        ruta = cls._obtener_ruta("usuarios.json")
         try:
-            self.ruta.parent.mkdir(parents=True, exist_ok=True)
-            with open(self.ruta, "w", encoding="utf-8") as f:
-                json.dump(datos, f, indent=4, ensure_ascii=False)
-            return True
+            with open(ruta, "w", encoding="utf-8") as f:
+                json.dump([u.a_diccionario() for u in usuarios], f, indent=4, ensure_ascii=False)
         except PermissionError:
-            print("Sin permisos para escribir productos.json.")
-            return False
+            print("Error: No se tienen permisos para escribir en usuarios.json.")
+
+    @classmethod
+    def cargar_usuarios(cls) -> list[Usuario]:
+        ruta = cls._obtener_ruta("usuarios.json")
+        usuarios = []
+        try:
+            with open(ruta, "r", encoding="utf-8") as f:
+                datos = json.load(f)
+                for item in datos:
+                    usuarios.append(Usuario.desde_diccionario(item))
+        except FileNotFoundError:
+            pass
+        except json.JSONDecodeError:
+            print("Error: Formato JSON inválido en usuarios.json.")
+        except KeyError as e:
+            print(f"Error: Clave faltante {e} al cargar usuarios.")
+        except PermissionError:
+            print("Error: Sin permisos para leer usuarios.json.")
+        return usuarios
+
+    @classmethod
+    def guardar_ventas(cls, ventas: list[Venta]) -> None:
+        ruta = cls._obtener_ruta("ventas.json")
+        try:
+            with open(ruta, "w", encoding="utf-8") as f:
+                json.dump([v.a_diccionario() for v in ventas], f, indent=4, ensure_ascii=False)
+        except PermissionError:
+            print("Error: No se tienen permisos para escribir en ventas.json.")
+
+    @classmethod
+    def cargar_ventas(cls) -> list[Venta]:
+        ruta = cls._obtener_ruta("ventas.json")
+        ventas = []
+        try:
+            with open(ruta, "r", encoding="utf-8") as f:
+                datos = json.load(f)
+                for item in datos:
+                    ventas.append(Venta.desde_diccionario(item))
+        except FileNotFoundError:
+            pass
+        except json.JSONDecodeError:
+            print("Error: Formato JSON inválido en ventas.json.")
+        except KeyError as e:
+            print(f"Error: Clave faltante {e} al cargar ventas.")
+        except PermissionError:
+            print("Error: Sin permisos para leer ventas.json.")
+        return ventas
